@@ -7,6 +7,15 @@ A PowerShell Media Player.
 ./PlayMusic.ps1 -P "C:\Path_To_Your_Music"
 ```
 
+- If you specified a file type the script try to find a "*.flac" files
+```
+./PlayMusic.ps1 -P "C:\Path_To_Your_Music" -Ft ".flac"
+```
+or:
+```
+./PlayMusic.ps1 -P "C:\Path_To_Your_Music" -Ft ".mp3"
+```
+
 - Play Shuffle playlist of your folder.
 ```
 ./PlayMusic.ps1 -P "C:\Path_To_Your_Music" -Shuffle
