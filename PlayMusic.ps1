@@ -4,7 +4,8 @@ Param(
     [Alias('P')]  [String] $PathMusic,
     [Alias('Sh')] [switch] $Shuffle, 
     [Alias('St')] [Switch] $Stop, 
-    [Alias('L')]  [Switch] $Loop 
+    [Alias('L')]  [Switch] $Loop,
+    [Alias('Ft')] [String] $fileType
 )
 
 function Start-MediaPlayer { 
@@ -12,7 +13,8 @@ function Start-MediaPlayer {
         [Alias('P')]  [String] $Path, 
         [Alias('Sh')] [switch] $Shuffle, 
         [Alias('St')] [Switch] $Stop, 
-        [Alias('L')]  [Switch] $Loop 
+        [Alias('L')]  [Switch] $Loop,
+        [Alias('Ft')] [String] $fileType
     ) 
  
     If ($Stop.IsPresent) { 
@@ -73,7 +75,7 @@ function Start-MediaPlayer {
                 $MediaPlayer = New-Object System.Windows.Media.Mediaplayer 
                          
                 # Crunching the numbers and Information 
-                $FileList = Get-ChildItem $Path -Recurse -Include *.flac* | Select-Object fullname, @{n = 'Duration'; e = { get-songduration $_.fullname } } 
+                $FileList = Get-ChildItem $Path -Recurse -Include *$fileType* | Select-Object fullname, @{n = 'Duration'; e = { get-songduration $_.fullname } } 
                 $FileCount = $FileList.count 
                 $TotalPlayDuration = [Math]::Round(($FileList.duration | Measure-Object -Sum).sum / 60) 
                          
@@ -135,15 +137,25 @@ If ($Stop.IsPresent) {
 }
 ElseIf ($PathMusic) {
     If ($Shuffle.IsPresent) {
-        Start-MediaPlayer $ -P $PathMusic -Sh $Shuffle
+        If ($fileType) {
+            Start-MediaPlayer $ -P $PathMusic -Sh $Shuffle -Ft $fileType
+        }
+        Else {
+            Start-MediaPlayer $ -P $PathMusic -Sh $Shuffle -Ft ".flac"
+        }
     }
     ElseIf ($Loop.IsPresent) {
-        Start-MediaPlayer -P $PathMusic -L $Loop
-    }
+        If ($fileType) {
+            Start-MediaPlayer -P $PathMusic -L $Loop -Ft $fileType
+        }
+        Else {
+            Start-MediaPlayer -P $PathMusic -L $Loop -Ft ".flac"
+        }
+    }    
     Else {
-        Start-MediaPlayer -P $PathMusic
+        Start-MediaPlayer -P $PathMusic -Ft ".flac"
     }
 }
 Else {
-    Start-MediaPlayer
+    Start-MediaPlayer -Ft ".flac"
 }
