@@ -1,6 +1,10 @@
 # PS_MediaPlayer
 A PowerShell Media Player.
 
+This Music player only takes **7.67KB**.
+
+In RAM like you supposed id between **20MB** and **30MB**.
+
 ## How to Run
 - Play secuencial playlist of your folder.
 ```
