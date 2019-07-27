@@ -4,11 +4,10 @@ Param(
     [Alias('P')]  [String] $PathMusic,
     [Alias('Sh')] [switch] $Shuffle, 
     [Alias('St')] [Switch] $Stop, 
-    [Alias('L')]  [Switch] $Loop
+    [Alias('L')]  [Switch] $Loop 
 )
 
 function Start-MediaPlayer { 
-    [cmdletbinding()] 
     Param( 
         [Alias('P')]  [String] $Path, 
         [Alias('Sh')] [switch] $Shuffle, 
@@ -16,28 +15,28 @@ function Start-MediaPlayer {
         [Alias('L')]  [Switch] $Loop 
     ) 
  
-    If ($Stop) { 
+    If ($Stop.IsPresent) { 
         Write-Host "Stoping any Already running instance of Media in background." 
         Get-Job MusicPlayer -ErrorAction SilentlyContinue | Remove-Job -Force 
     } 
     Else {        
-        #Caches Path for next time in case you don't enter path to the music directory 
-        If ($path) { 
+        #Caches Path for next time in case you don't enter Path to the music directory 
+        If ($Path) { 
             $Path | out-file C:\Temp\Musicplayer.txt 
         } 
         else { 
             If ((Get-Content C:\Temp\Musicplayer.txt -ErrorAction SilentlyContinue).Length -ne 0) { 
                 Write-Verbose "You've not provided a music directory, looking for cached information from Previous use." 
-                $path = Get-Content C:\Temp\Musicplayer.txt 
+                $Path = Get-Content C:\Temp\Musicplayer.txt 
  
                 If (-not (Test-Path $Path)) { 
-                    "Please provide a path to a music directory.`nFound a cached directory `"$Path`" from previous use, but that too isn't accessible!" 
-                    # Mark Path as Empty string, If Cached path doesn't exist 
+                    "Please provide a Path to a music directory.`nFound a cached directory `"$Path`" from previous use, but that too isn't accessible!" 
+                    # Mark Path as Empty string, If Cached Path doesn't exist 
                     $Path = ''      
                 } 
             } 
             else { 
-                "Please provide a path to a music directory." 
+                "Please provide a Path to a music directory." 
             } 
         } 
   
@@ -66,7 +65,7 @@ function Start-MediaPlayer {
                 $Balloon.ShowBalloonTip(1000) 
             } 
                      
-            Function PlayMusic($path, $Shuffle, $Loop) { 
+            Function PlayMusic($Path, $Shuffle, $Loop) { 
                 # Calling required assembly 
                 Add-Type -AssemblyName PresentationCore 
      
@@ -74,12 +73,12 @@ function Start-MediaPlayer {
                 $MediaPlayer = New-Object System.Windows.Media.Mediaplayer 
                          
                 # Crunching the numbers and Information 
-                $FileList = gci $Path -Recurse -Include *.flac* | select fullname, @{n = 'Duration'; e = { get-songduration $_.fullname } } 
+                $FileList = Get-ChildItem $Path -Recurse -Include *.flac* | Select-Object fullname, @{n = 'Duration'; e = { get-songduration $_.fullname } } 
                 $FileCount = $FileList.count 
-                $TotalPlayDuration = [Math]::Round(($FileList.duration | measure -Sum).sum / 60) 
+                $TotalPlayDuration = [Math]::Round(($FileList.duration | Measure-Object -Sum).sum / 60) 
                          
                 # Condition to identifed the Mode chosed by the user 
-                if ($Shuffle) { 
+                if ($Shuffle.IsPresent) { 
                     $Mode = "Shuffle" 
                     $FileList = $FileList | Sort-Object { Get-Random }  # Find the target Music Files and sort them Randomly 
                 } 
@@ -88,20 +87,20 @@ function Start-MediaPlayer {
                 } 
                          
                 # Check If user chose to play songs in Loop 
-                If ($Loop) { 
+                If ($Loop.IsPresent) { 
                     $Mode = $Mode + " in Loop" 
                     $TotalPlayDuration = "Infinite" 
                 } 
                          
                 If ($FileList) {     
-                    '' | select @{n = 'TotalSongs'; e = { $FileCount }; }, @{n = 'PlayDuration'; e = { [String]$TotalPlayDuration + " Mins" } }, @{n = 'Mode'; e = { $Mode } }  
+                    '' | Select-Object @{n = 'TotalSongs'; e = { $FileCount }; }, @{n = 'PlayDuration'; e = { [String]$TotalPlayDuration + " Mins" } }, @{n = 'Mode'; e = { $Mode } }  
                 } 
                 else { 
-                    "No music files found in directory `"$path`" ."  
+                    "No music files found in directory `"$Path`" ."  
                 } 
                          
                 Do { 
-                    $FileList | % { 
+                    $FileList | ForEach-Object { 
                         $CurrentSongDuration = New-TimeSpan -Seconds (Get-SongDuration $_.fullname) 
                         $Message = "Song : " + $(Split-Path $_.fullname -Leaf) + "`nPlay Duration : $($CurrentSongDuration.Minutes) Mins $($CurrentSongDuration.Seconds) Sec`nMode : $Mode"             
                         $MediaPlayer.Open($_.FullName)                    # 1. Open Music file with media player 
@@ -120,32 +119,31 @@ function Start-MediaPlayer {
             Get-Job MusicPlayer -ErrorAction SilentlyContinue | Remove-Job -Force 
         } 
  
-        # Run only if path was Defined or retrieved from cached information 
+        # Run only if Path was Defined or retrieved from cached information 
         If ($Path) { 
             Write-Verbose "Starting a background Job to play Music files" 
-            Start-Job -Name MusicPlayer -InitializationScript $init -ScriptBlock { playmusic $args[0] $args[1] $args[2] } -ArgumentList $path, $Shuffle, $Loop | Out-Null 
+            Start-Job -Name MusicPlayer -InitializationScript $init -ScriptBlock { playmusic $args[0] $args[1] $args[2] } -ArgumentList $Path, $Shuffle, $Loop | Out-Null 
             Start-Sleep -Seconds 3       # Sleep to allow media player some breathing time to load files 
             Receive-Job -Name MusicPlayer | Format-Table @{n = 'TotalSongs'; e = { $_.TotalSongs }; alignment = 'left' }, @{n = 'TotalPlayDuration'; e = { $_.PlayDuration }; alignment = 'left' }, @{n = 'Mode'; e = { $_.Mode }; alignment = 'left' } -AutoSize 
         } 
     }      
 }
 
-If ($PathMusic) {
-    If ($Shuffle) {
-        If ($Loop) {
-            Start-MediaPlayer $PathMusic $Shuffle $Loop
-        }
-        Else {
-            Start-MediaPlayer $PathMusic $Shuffle        
-        }
-    }    
-    ElseIf ($Loop) {
-        Start-MediaPlayer $PathMusic $Loop
+#Start-MediaPlayer
+If ($Stop.IsPresent) {
+    Start-MediaPlayer -St $Stop
+}
+ElseIf ($PathMusic) {
+    If ($Shuffle.IsPresent) {
+        Start-MediaPlayer $ -P $PathMusic -Sh $Shuffle
+    }
+    ElseIf ($Loop.IsPresent) {
+        Start-MediaPlayer -P $PathMusic -L $Loop
     }
     Else {
-        Start-MediaPlayer $PathMusic
+        Start-MediaPlayer -P $PathMusic
     }
 }
-ElseIf ($Stop) {
-    Start-MediaPlayer $Stop
+Else {
+    Start-MediaPlayer
 }
