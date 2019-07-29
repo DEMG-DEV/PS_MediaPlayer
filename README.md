@@ -5,6 +5,9 @@ This Music player only takes **7.67KB**.
 
 In RAM like you supposed id between **20MB** and **30MB**.
 
+## License
+This repository has te **MIT** License, so you be able to use in any situation or share.
+
 ## How to Run
 - Play secuencial playlist of your folder.
 ```
