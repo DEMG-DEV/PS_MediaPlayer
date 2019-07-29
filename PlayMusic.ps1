@@ -22,7 +22,7 @@ function Start-MediaPlayer {
         Get-Job MusicPlayer -ErrorAction SilentlyContinue | Remove-Job -Force
     }
     Else {
-        #Caches Path for next time in case you don't enter Path to the music directory
+        # Caches Path for next time in case you don't enter Path to the music directory
         If ($Path) {
             $Path | out-file C:\Temp\Musicplayer.txt
         }
@@ -105,8 +105,8 @@ function Start-MediaPlayer {
                     $FileList | ForEach-Object {
                         $CurrentSongDuration = New-TimeSpan -Seconds (Get-SongDuration $_.fullname)
                         $Message = "Song : " + $(Split-Path $_.fullname -Leaf) + "`nPlay Duration : $($CurrentSongDuration.Minutes) Mins $($CurrentSongDuration.Seconds) Sec`nMode : $Mode"
-                        $MediaPlayer.Open($_.FullName)                    # 1. Open Music file with media player
-                        $MediaPlayer.Play()                                # 2. Play the Music File
+                        $MediaPlayer.Open($_.FullName)                  # 1. Open Music file with media player
+                        $MediaPlayer.Play()                             # 2. Play the Music File
                         Show-NotifyBalloon ($Message)                   # 3. Show a notification balloon in system tray
                         Start-Sleep -Seconds $_.duration                # 4. Pause the script execution until song completes
                         $MediaPlayer.Stop()                             # 5. Stop the Song
